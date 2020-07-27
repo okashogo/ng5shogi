@@ -27,6 +27,8 @@ const collection_challenge = db.collection('challenge');
 
 interface IState {
   loginUser : any;
+  challengeId : number;
+  applyId: number;
 }
 
 class Root extends React.Component<{}, IState> {
@@ -34,11 +36,15 @@ class Root extends React.Component<{}, IState> {
     super(props);
     this.state = {
       loginUser: null,
+      challengeId : 0,
+      applyId : 0,
     };
 
     this.login = this.login.bind(this);
     this.logout = this.logout.bind(this);
-    this.add = this.add.bind(this);
+    this.input_challenge = this.input_challenge.bind(this);
+    this.submit_challenge = this.submit_challenge.bind(this);
+    this.submit_apply = this.submit_apply.bind(this);
   }
 
   login(){
@@ -52,19 +58,6 @@ class Root extends React.Component<{}, IState> {
           console.log(this.state.loginUser.uid);
         }
       });
-  }
-
-  add(){
-      collection_record.add({
-        userId: this.state.loginUser.uid,
-        message: "oka",
-      })
-      .then(doc => {
-        console.log(doc.id + ' added!');
-      })
-      .catch(error => {
-        console.log(error);
-      })
   }
 
   logout(){
@@ -85,6 +78,77 @@ class Root extends React.Component<{}, IState> {
     });
   }
 
+  input_challenge = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value:number = Number(event.target.value);
+      this.setState({challengeId: value});
+  }
+
+  submit_challenge(){
+    if(this.state.challengeId != 0){
+      console.log("submit_challenge");
+      collection_challenge.add({
+            userId: this.state.loginUser.uid,
+            pass: this.state.challengeId,
+            created_at: firebase.firestore.FieldValue.serverTimestamp(),
+            enemy_id: "nobody",
+          })
+          .then(doc => {
+            console.log(doc.id + ' added!');
+          })
+          .catch(error => {
+            console.log(error);
+          })
+    }
+    else{
+      alert("0以外の半角数字を入力して下さい");
+    }
+    // console.log(<HTMLInputElement>document.getElementById("input_challenge").value);
+  }
+
+  input_apply = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value:number = Number(event.target.value);
+      this.setState({applyId: value});
+  }
+
+  submit_apply(){
+    if(this.state.applyId != 0){
+      console.log("submit_apply");
+      collection_challenge.where('enemy_id', '==', 'nobody').where('pass', '==', this.state.applyId).get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            return;
+          }
+
+          snapshot.forEach(doc => {
+
+            collection_challenge.doc(doc.id)
+              .set({
+                userId: doc.data().userId,
+                pass: 0,
+                created_at: doc.data().created_at,
+                enemy_id: this.state.loginUser.uid,
+              })
+              .then(snapshot => {
+                console.log(snapshot)
+                console.log("OK!")
+              })
+              .catch(err => {
+                console.log('Not update!');
+                console.log(err);
+              });
+
+          });
+        })
+        .catch(err => {
+            console.log('Error getting documents', err);
+        });
+    }
+    else{
+      alert("0以外の半角数字を入力して下さい");
+    }
+    // console.log(<HTMLInputElement>document.getElementById("input_challenge").value);
+  }
+
 
   render() {
     return (
@@ -95,8 +159,17 @@ class Root extends React.Component<{}, IState> {
           }
           {this.state.loginUser != null &&
             <div>
-              <button onClick={this.logout}>logout</button>
-              <button onClick={this.add}>add</button>
+              <div>
+                <button onClick={this.logout}>logout</button>
+              </div>
+              <div>
+                <input id="input_challenge" placeholder="半角数字を入力" onChange={this.input_challenge}/>
+                <button onClick={this.submit_challenge}>挑戦状を出す</button>
+              <div>
+              </div>
+                <input id="input_apply" placeholder="半角数字を入力" onChange={this.input_apply}/>
+                <button onClick={this.submit_apply}>申し込む</button>
+              </div>
             </div>
           }
         </div>
