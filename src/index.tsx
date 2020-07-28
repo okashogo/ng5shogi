@@ -42,7 +42,7 @@ const db = firebase.firestore();
 const collection_record = db.collection('record');
 const collection_challenge = db.collection('challenge');
 
-class Box extends React.Component<{koma:string}> {
+class Box extends React.Component<{koma:string[]}> {
   render() {
     const emptyJudge = this.props.koma;
     var dom:any;
@@ -50,7 +50,12 @@ class Box extends React.Component<{koma:string}> {
       dom = <div></div>
     }
     else{
-      dom = <div>{emptyJudge}</div>
+      if(emptyJudge[1] == "after"){
+        dom = <div style={{transform: "rotate(180deg)", textAlign:"center", position: "absolute", top:"30%", left:"35%"}}>{emptyJudge[0]}</div>
+      }
+      else{
+        dom = <div style={{textAlign:"center", position: "absolute", top:"30%", left:"35%"}}>{emptyJudge[0]}</div>
+      }
     }
     return (
       dom
@@ -64,7 +69,7 @@ interface IState {
   stage: number;
   challengeId : number;
   applyId: number;
-  squares: string[];
+  squares: any[];
 }
 
 class Root extends React.Component<{}, IState> {
@@ -76,36 +81,37 @@ class Root extends React.Component<{}, IState> {
       stage: 2,
       challengeId : 0,
       applyId : 0,
-      squares: Array(9*9).fill(""),
+      squares: Array(9*9).fill(["",""]),
     };
 
     //歩
     for (let i = 18; i < 18 + 9; i++) {
-      this.state.squares[i] = hu;
+      this.state.squares[i] = [hu, "after"];
     }
     for (let i = 54; i < 54 + 9; i++) {
-      this.state.squares[i] = hu;
+      this.state.squares[i] = [hu, "before"];
     }
 
     for (let i = 0; i < 2; i++) {
 
       let j = i*2 -1;
-      this.state.squares[4 + j] = kin;
-      this.state.squares[4 + j*2] = gin;
-      this.state.squares[4 + j*3] = kei;
-      this.state.squares[4 + j*4] = kyo;
-      this.state.squares[76 + j] = kin;
-      this.state.squares[76 + j*2] = gin;
-      this.state.squares[76 + j*3] = kei;
-      this.state.squares[76 + j*4] = kyo;
+      this.state.squares[4 + j] = [kin, "after"];
+      this.state.squares[4 + j*2] = [gin, "after"];
+      this.state.squares[4 + j*3] = [kei, "after"];
+      this.state.squares[4 + j*4] = [kyo, "after"];
 
-      this.state.squares[10] = hisha;
-      this.state.squares[70] = hisha;
-      this.state.squares[16] = kaku;
-      this.state.squares[64] = kaku;
+      this.state.squares[76 + j] = [kin, "before"];
+      this.state.squares[76 + j*2] = [gin, "before"];
+      this.state.squares[76 + j*3] = [kei, "before"];
+      this.state.squares[76 + j*4] = [kyo, "before"];
 
-      this.state.squares[4] = ou;
-      this.state.squares[76] = ou;
+      this.state.squares[10] = [hisha, "after"];
+      this.state.squares[70] = [hisha, "before"];
+      this.state.squares[16] = [kaku, "after"];
+      this.state.squares[64] = [kaku, "before"];
+
+      this.state.squares[4] = [ou, "after"];
+      this.state.squares[76] = [ou, "before"];
 
       // //桂
       // this.state.squares[1] = kei;
@@ -246,7 +252,7 @@ class Root extends React.Component<{}, IState> {
   render() {
     const fieldList = this.state.squares.map((output: string, key) => {
       return(
-        <div key = {key.toString()} id = {key.toString()}><Box koma={output}/></div>
+        <div className ="box" key = {key.toString()} id = {key.toString()} style={{position: "relative"}}><Box koma={output}/></div>
       )
     });
     return (

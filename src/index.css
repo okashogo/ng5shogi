@@ -16,4 +16,9 @@ code {
   display: grid;
   grid-template-rows: repeat(9, 60px);
   grid-template-columns: repeat(9, 60px);
+  grid-gap: 1px;
+}
+
+.box {
+  background-color: #CD853F;
 }
