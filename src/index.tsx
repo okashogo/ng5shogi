@@ -7,7 +7,23 @@ import "firebase/auth";
 import "firebase/firebase-firestore";
 import firebase from "firebase";
 
-const B = require('./img//koma.jpg').default;
+const B = require('./img/B.jpg').default;
+
+const ou = "王";
+const kin = "金";
+const gin = "銀";
+const hisha = "飛";
+const kaku = "角";
+const kei = "桂";
+const kyo = "香";
+const hu = "歩";
+const ryu = "龍";
+const uma = "馬";
+const nariGin = "成銀";
+const nariKyo = "成香";
+const nariKei = "成桂";
+const tokin = "と";
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyAvvQqBys0iT9wfbrW5qYkIaQwIr6Rb1fQ",
@@ -26,15 +42,15 @@ const db = firebase.firestore();
 const collection_record = db.collection('record');
 const collection_challenge = db.collection('challenge');
 
-class Box extends React.Component<{color:string}> {
+class Box extends React.Component<{koma:string}> {
   render() {
-    const emptyJudge = this.props.color;
+    const emptyJudge = this.props.koma;
     var dom:any;
     if(!(emptyJudge)) {
-      dom = <div>a<img src={B}/></div>
+      dom = <div></div>
     }
     else{
-      dom = <img src={B}/>
+      dom = <div>{emptyJudge}</div>
     }
     return (
       dom
@@ -63,18 +79,55 @@ class Root extends React.Component<{}, IState> {
       squares: Array(9*9).fill(""),
     };
 
+    //歩
+    for (let i = 18; i < 18 + 9; i++) {
+      this.state.squares[i] = hu;
+    }
+    for (let i = 54; i < 54 + 9; i++) {
+      this.state.squares[i] = hu;
+    }
+
+    for (let i = 0; i < 2; i++) {
+
+      let j = i*2 -1;
+      this.state.squares[4 + j] = kin;
+      this.state.squares[4 + j*2] = gin;
+      this.state.squares[4 + j*3] = kei;
+      this.state.squares[4 + j*4] = kyo;
+      this.state.squares[76 + j] = kin;
+      this.state.squares[76 + j*2] = gin;
+      this.state.squares[76 + j*3] = kei;
+      this.state.squares[76 + j*4] = kyo;
+
+      this.state.squares[10] = hisha;
+      this.state.squares[70] = hisha;
+      this.state.squares[16] = kaku;
+      this.state.squares[64] = kaku;
+
+      this.state.squares[4] = ou;
+      this.state.squares[76] = ou;
+
+      // //桂
+      // this.state.squares[1] = kei;
+      // this.state.squares[7] = kei;
+      // this.state.squares[73] = kei;
+      // this.state.squares[79] = kei;
+    }
+
+
     this.login = this.login.bind(this);
     this.logout = this.logout.bind(this);
     this.input_challenge = this.input_challenge.bind(this);
     this.submit_challenge = this.submit_challenge.bind(this);
     this.submit_apply = this.submit_apply.bind(this);
+
+
   }
 
   login(){
     console.log("login");
     auth.signInAnonymously();
     auth.onAuthStateChanged(user => {
-        console.log("aaa");
         if (user) {
           console.log(user.uid);
           this.setState({loginUser: user});
@@ -193,7 +246,7 @@ class Root extends React.Component<{}, IState> {
   render() {
     const fieldList = this.state.squares.map((output: string, key) => {
       return(
-        <div key = {key.toString()} id = {key.toString()}><Box color={output}/></div>
+        <div key = {key.toString()} id = {key.toString()}><Box koma={output}/></div>
       )
     });
     return (
