@@ -5,8 +5,9 @@ import * as serviceWorker from './serviceWorker';
 
 import "firebase/auth";
 import "firebase/firebase-firestore";
-
 import firebase from "firebase";
+
+const B = require('./img//koma.jpg').default;
 
 const firebaseConfig = {
   apiKey: "AIzaSyAvvQqBys0iT9wfbrW5qYkIaQwIr6Rb1fQ",
@@ -25,10 +26,29 @@ const db = firebase.firestore();
 const collection_record = db.collection('record');
 const collection_challenge = db.collection('challenge');
 
+class Box extends React.Component<{color:string}> {
+  render() {
+    const emptyJudge = this.props.color;
+    var dom:any;
+    if(!(emptyJudge)) {
+      dom = <div>a<img src={B}/></div>
+    }
+    else{
+      dom = <img src={B}/>
+    }
+    return (
+      dom
+    );
+  }
+}
+
 interface IState {
   loginUser : any;
+  enemyUser : string;
+  stage: number;
   challengeId : number;
   applyId: number;
+  squares: string[];
 }
 
 class Root extends React.Component<{}, IState> {
@@ -36,8 +56,11 @@ class Root extends React.Component<{}, IState> {
     super(props);
     this.state = {
       loginUser: null,
+      enemyUser: "",
+      stage: 2,
       challengeId : 0,
       applyId : 0,
+      squares: Array(9*9).fill(""),
     };
 
     this.login = this.login.bind(this);
@@ -55,6 +78,7 @@ class Root extends React.Component<{}, IState> {
         if (user) {
           console.log(user.uid);
           this.setState({loginUser: user});
+          this.setState({stage: 1});
           console.log(this.state.loginUser.uid);
         }
       });
@@ -64,15 +88,29 @@ class Root extends React.Component<{}, IState> {
     console.log("logout");
     auth.signInAnonymously();
     this.setState({loginUser: null});
+    this.setState({stage: 0});
   }
 
   componentDidMount  = async () =>{
-    collection_record.onSnapshot(snapshot => {
-      snapshot.docChanges().forEach(async change => {
-        if (change.type === 'added') {
-          console.log("ADD!!");
-          console.log(change.doc.data().userId);
-          console.log(change.doc.data().message);
+    // collection_record.onSnapshot(snapshot => {
+    //   snapshot.docChanges().forEach(async change => {
+    //     if (change.type === 'added') {
+    //       console.log("ADD!!");
+    //       console.log(change.doc.data().userId);
+    //       console.log(change.doc.data().message);
+    //     }
+    //   })
+    // });
+
+    //申し込みを受けた時
+    collection_challenge.onSnapshot(snapshot => {
+      snapshot.docChanges().forEach(change => {
+        if (change.type === 'modified' && this.state.challengeId == change.doc.data().pass && this.state.loginUser.uid == change.doc.data().userId && change.doc.data().enemyId != "nobody") {
+          console.log('applyed!!!');
+          // console.log(change.doc.data().userId);
+          // console.log(change.doc.data().enemyId);
+          this.setState({stage: 2});
+          this.setState({enemyUser: change.doc.data().enemyId});
         }
       })
     });
@@ -90,7 +128,7 @@ class Root extends React.Component<{}, IState> {
             userId: this.state.loginUser.uid,
             pass: this.state.challengeId,
             created_at: firebase.firestore.FieldValue.serverTimestamp(),
-            enemy_id: "nobody",
+            enemyId: "nobody",
           })
           .then(doc => {
             console.log(doc.id + ' added!');
@@ -113,7 +151,7 @@ class Root extends React.Component<{}, IState> {
   submit_apply(){
     if(this.state.applyId != 0){
       console.log("submit_apply");
-      collection_challenge.where('enemy_id', '==', 'nobody').where('pass', '==', this.state.applyId).get()
+      collection_challenge.where('enemyId', '==', 'nobody').where('pass', '==', this.state.applyId).get()
         .then(snapshot => {
           if (snapshot.empty) {
             return;
@@ -124,13 +162,15 @@ class Root extends React.Component<{}, IState> {
             collection_challenge.doc(doc.id)
               .set({
                 userId: doc.data().userId,
-                pass: 0,
+                pass: doc.data().pass,
                 created_at: doc.data().created_at,
-                enemy_id: this.state.loginUser.uid,
+                enemyId: this.state.loginUser.uid,
               })
               .then(snapshot => {
                 console.log(snapshot)
                 console.log("OK!")
+                this.setState({enemyUser: doc.data().userId});
+                this.setState({stage: 2});
               })
               .catch(err => {
                 console.log('Not update!');
@@ -151,27 +191,48 @@ class Root extends React.Component<{}, IState> {
 
 
   render() {
+    const fieldList = this.state.squares.map((output: string, key) => {
+      return(
+        <div key = {key.toString()} id = {key.toString()}><Box color={output}/></div>
+      )
+    });
     return (
         <div>
-          <h1>５枚持ったら負け将棋</h1>
-          {this.state.loginUser == null &&
+          <h1 style={{transform: "rotate(180deg)"}}>持ち駒が５個になったら負け将棋</h1>
+          {this.state.stage == 0 &&
             <button onClick={this.login}>login</button>
           }
-          {this.state.loginUser != null &&
+          {this.state.stage >= 1 &&
             <div>
               <div>
                 <button onClick={this.logout}>logout</button>
               </div>
+            </div>
+          }
+          {this.state.stage == 1 &&
+            <div>
               <div>
                 <input id="input_challenge" placeholder="半角数字を入力" onChange={this.input_challenge}/>
                 <button onClick={this.submit_challenge}>挑戦状を出す</button>
-              <div>
               </div>
+              <div>
                 <input id="input_apply" placeholder="半角数字を入力" onChange={this.input_apply}/>
                 <button onClick={this.submit_apply}>申し込む</button>
               </div>
             </div>
           }
+          {
+            this.state.stage >= 3 &&
+            <div>{this.state.loginUser.uid} VS {this.state.enemyUser}</div>
+          }
+          {this.state.stage >= 2 &&
+            <div>
+              <div className="field">
+                {fieldList}
+              </div>
+            </div>
+          }
+
         </div>
     );
   }
