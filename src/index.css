@@ -22,3 +22,7 @@ code {
 .box {
   background-color: #CD853F;
 }
+
+.moveSelct{
+  background-color: red;
+}

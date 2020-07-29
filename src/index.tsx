@@ -70,6 +70,7 @@ interface IState {
   challengeId : number;
   applyId: number;
   squares: any[];
+  moveSelct: number;
 }
 
 class Root extends React.Component<{}, IState> {
@@ -82,6 +83,7 @@ class Root extends React.Component<{}, IState> {
       challengeId : 0,
       applyId : 0,
       squares: Array(9*9).fill(["",""]),
+      moveSelct: -1,
     };
 
     //歩
@@ -248,11 +250,24 @@ class Root extends React.Component<{}, IState> {
     // console.log(<HTMLInputElement>document.getElementById("input_challenge").value);
   }
 
+  moveSelct(value:number){
+    console.log(value);
+    this.setState({moveSelct: value});
+  }
 
   render() {
-    const fieldList = this.state.squares.map((output: string, key) => {
+    const fieldList = this.state.squares.map((output: string[], key) => {
+      if(this.state.moveSelct == key){
+        return(
+          <div className="moveSelct" key = {key.toString()} id = {key.toString()} style={{position: "relative"}} onClick={this.moveSelct.bind(this,key)}>
+            <Box koma={output}/>
+          </div>
+        )
+      }
       return(
-        <div className ="box" key = {key.toString()} id = {key.toString()} style={{position: "relative"}}><Box koma={output}/></div>
+        <div className="box" key = {key.toString()} id = {key.toString()} style={{position: "relative"}} onClick={this.moveSelct.bind(this,key)}>
+          <Box koma={output}/>
+        </div>
       )
     });
     return (
