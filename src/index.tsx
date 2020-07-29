@@ -70,6 +70,7 @@ interface IState {
   challengeId : number;
   applyId: number;
   squares: any[];
+  mySide: string;
   moveSelct: number;
 }
 
@@ -83,6 +84,7 @@ class Root extends React.Component<{}, IState> {
       challengeId : 0,
       applyId : 0,
       squares: Array(9*9).fill(["",""]),
+      mySide: "before",
       moveSelct: -1,
     };
 
@@ -250,9 +252,42 @@ class Root extends React.Component<{}, IState> {
     // console.log(<HTMLInputElement>document.getElementById("input_challenge").value);
   }
 
+  enemySide() {
+    if(this.state.mySide == "before"){
+      return "after";
+    }else{
+      return "before";
+    }
+  }
+
   moveSelct(value:number){
-    console.log(value);
-    this.setState({moveSelct: value});
+    if(this.state.moveSelct != -1){ //選択中のとき
+      if(this.state.squares[value][1] == this.state.mySide){ //選択肢を変えるだけ
+        this.setState({moveSelct: value});
+      }
+
+      else{ //移動する
+        const komaSelect = this.state.squares[this.state.moveSelct];
+
+        if(true){ //そこに駒が置けるか判定する
+          if(this.state.squares[value][1] == this.enemySide()){ //相手の駒をとる
+            console.log("取りました");
+          }
+          else{ //ただの移動
+            const tmpSquares = this.state.squares;
+            tmpSquares[this.state.moveSelct] = ["", ""];
+            tmpSquares[value] = [komaSelect[0], this.state.mySide];
+            this.setState({squares: tmpSquares});
+          }
+        }
+        this.setState({moveSelct: -1}); //無選択状態へ
+      }
+
+    }else{ //何も選択していない状態
+      if(this.state.squares[value][1] == this.state.mySide){
+        this.setState({moveSelct: value});
+      }
+    }
   }
 
   render() {
