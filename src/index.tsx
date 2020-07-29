@@ -72,6 +72,8 @@ interface IState {
   squares: any[];
   mySide: string;
   moveSelct: number;
+  myKomaHave: any;
+  enemyKomaHave: any;
 }
 
 class Root extends React.Component<{}, IState> {
@@ -86,6 +88,33 @@ class Root extends React.Component<{}, IState> {
       squares: Array(9*9).fill(["",""]),
       mySide: "before",
       moveSelct: -1,
+      // myKomaHave: [
+      //   [kin, 0],
+      //   [gin, 0],
+      //   [hisha, 0],
+      //   [kaku, 0],
+      //   [kei, 0],
+      //   [kyo, 0],
+      //   [hu, 0],
+      // ],
+      myKomaHave: {
+        'hisha': 0,
+        'kaku': 0,
+        'kin': 0,
+        'gin': 0,
+        'kei': 0,
+        'kyo': 0,
+        'hu': 0,
+      },
+      enemyKomaHave: {
+        'hisha': 0,
+        'kaku': 0,
+        'kin': 0,
+        'gin': 0,
+        'kei': 0,
+        'kyo': 0,
+        'hu': 0,
+      },
     };
 
     //歩
@@ -271,14 +300,14 @@ class Root extends React.Component<{}, IState> {
 
         if(true){ //そこに駒が置けるか判定する
           if(this.state.squares[value][1] == this.enemySide()){ //相手の駒をとる
-            console.log("取りました");
+            this.MyKomaHaveChange(this.state.myKomaHave, this.state.squares[value][0], 1);
           }
-          else{ //ただの移動
-            const tmpSquares = this.state.squares;
-            tmpSquares[this.state.moveSelct] = ["", ""];
-            tmpSquares[value] = [komaSelect[0], this.state.mySide];
-            this.setState({squares: tmpSquares});
-          }
+          //ただの移動
+          const tmpSquares = this.state.squares;
+          tmpSquares[this.state.moveSelct] = ["", ""];
+          tmpSquares[value] = [komaSelect[0], this.state.mySide];
+          this.setState({squares: tmpSquares});
+          console.log(this.state.myKomaHave);
         }
         this.setState({moveSelct: -1}); //無選択状態へ
       }
@@ -288,6 +317,33 @@ class Root extends React.Component<{}, IState> {
         this.setState({moveSelct: value});
       }
     }
+  }
+
+  MyKomaHaveChange(myKomaHave:any, koma: string, num: number){
+      switch (koma){
+        case '飛':
+          myKomaHave.hisha += num;
+          break;
+        case '角':
+          myKomaHave.kaku += num;
+          break;
+        case '金':
+          myKomaHave.kin += num;
+          break;
+        case '銀':
+          myKomaHave.gin += num;
+          break;
+        case '桂':
+          myKomaHave.kei += num;
+          break;
+        case '香':
+          myKomaHave.kyo += num;
+          break;
+        case '歩':
+          myKomaHave.hu += num;
+          break;
+      }
+      this.setState({myKomaHave: myKomaHave});
   }
 
   render() {
