@@ -76,6 +76,16 @@ interface IState {
   enemyKomaHave: any;
 }
 
+const komaList = [
+  hisha,
+  kaku,
+  kin,
+  gin,
+  kei,
+  kyo,
+  hu,
+]
+
 class Root extends React.Component<{}, IState> {
   constructor(props : string[]) {
     super(props);
@@ -346,6 +356,32 @@ class Root extends React.Component<{}, IState> {
       this.setState({myKomaHave: myKomaHave});
   }
 
+  myHavefieldDisplay(output:string){
+    const myKomaHave = this.state.myKomaHave;
+    if(myKomaHave.hisha != 0 && output == "飛"){
+      return <div>飛{myKomaHave.hisha}</div>;
+    }
+    if(myKomaHave.kaku != 0 && output == "角"){
+      return <div>角{myKomaHave.kaku}</div>;
+    }
+    if(myKomaHave.kin != 0 && output == "金"){
+      return <div>金{myKomaHave.kin}</div>;
+    }
+    if(myKomaHave.gin != 0 && output == "銀"){
+      return <div>銀{myKomaHave.gin}</div>;
+    }
+    if(myKomaHave.kei != 0 && output == "桂"){
+      return <div>桂{myKomaHave.kei}</div>;
+    }
+    if(myKomaHave.kyo != 0 && output == "香"){
+      return <div>香{myKomaHave.kyo}</div>;
+    }
+    if(myKomaHave.hu != 0 && output == "歩"){
+      return <div>歩{myKomaHave.hu}</div>;
+    }
+    return <div></div>;
+  }
+
   render() {
     const fieldList = this.state.squares.map((output: string[], key) => {
       if(this.state.moveSelct == key){
@@ -361,6 +397,14 @@ class Root extends React.Component<{}, IState> {
         </div>
       )
     });
+
+    const myHavefield = komaList.map((output: string, key) => {
+      return <h3>{this.myHavefieldDisplay(output)}</h3>;
+    });
+
+    const enemyHavefield = <h1>oka</h1>;
+
+
     return (
         <div>
           <h1 style={{transform: "rotate(180deg)"}}>持ち駒が５個になったら負け将棋</h1>
@@ -391,9 +435,17 @@ class Root extends React.Component<{}, IState> {
             <div>{this.state.loginUser.uid} VS {this.state.enemyUser}</div>
           }
           {this.state.stage >= 2 &&
-            <div>
+            <div style={{display: "flex"}}>
+              <div style={{transform: "rotate(180deg)"}}>
+                {enemyHavefield}
+                oka
+              </div>
+
               <div className="field">
                 {fieldList}
+              </div>
+              <div>
+                {myHavefield}
               </div>
             </div>
           }
