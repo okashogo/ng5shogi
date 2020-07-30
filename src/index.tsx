@@ -90,11 +90,11 @@ class Root extends React.Component<{}, IState> {
     this.state = {
       loginUser: null,
       enemyUser: "",
-      stage: 2,
+      stage: 0,
       challengeId : 0,
       applyId : 0,
       squares: Array(9*9).fill(["",""]),
-      mySide: "before",
+      mySide: "",
       moveSelect: -1,
       // myKomaHave: [
       //   [kin, 0],
@@ -211,6 +211,7 @@ class Root extends React.Component<{}, IState> {
           // console.log(change.doc.data().enemyId);
           this.setState({stage: 2});
           this.setState({enemyUser: change.doc.data().enemyId});
+          this.setState({mySide: change.doc.data().challengeSide});
         }
       })
     });
@@ -221,14 +222,22 @@ class Root extends React.Component<{}, IState> {
       this.setState({challengeId: value});
   }
 
+  //挑戦状を出した時
   submit_challenge(){
     if(this.state.challengeId != 0){
       console.log("submit_challenge");
+      var challengeSide:string;
+      if(Math.floor(Math.random() * 2)){
+        challengeSide = "before";
+      }else{
+        challengeSide = "after";
+      }
       collection_challenge.add({
             userId: this.state.loginUser.uid,
             pass: this.state.challengeId,
             created_at: firebase.firestore.FieldValue.serverTimestamp(),
             enemyId: "nobody",
+            challengeSide: challengeSide,
           })
           .then(doc => {
             console.log(doc.id + ' added!');
@@ -248,6 +257,7 @@ class Root extends React.Component<{}, IState> {
       this.setState({applyId: value});
   }
 
+  //申し込みをしたとき
   submit_apply(){
     if(this.state.applyId != 0){
       console.log("submit_apply");
@@ -265,12 +275,15 @@ class Root extends React.Component<{}, IState> {
                 pass: doc.data().pass,
                 created_at: doc.data().created_at,
                 enemyId: this.state.loginUser.uid,
+                challengeSide: doc.data().challengeSide,
               })
               .then(snapshot => {
                 console.log(snapshot)
                 console.log("OK!")
                 this.setState({enemyUser: doc.data().userId});
                 this.setState({stage: 2});
+                this.setState({mySide: doc.data().challengeSide});
+                this.setState({mySide: this.enemySide()});
               })
               .catch(err => {
                 console.log('Not update!');
@@ -598,7 +611,7 @@ class Root extends React.Component<{}, IState> {
 
     return (
         <div>
-          <h1 style={{transform: "rotate(180deg)"}}>持ち駒が５個になったら負け将棋</h1>
+          <h1>持ち駒が５個になったら負け将棋</h1>
           {this.state.stage == 0 &&
             <button onClick={this.login}>login</button>
           }
@@ -622,12 +635,18 @@ class Root extends React.Component<{}, IState> {
             </div>
           }
           {
-            this.state.stage >= 3 &&
+            this.state.enemyUser != "" &&
             <div>{this.state.loginUser.uid} VS {this.state.enemyUser}</div>
           }
           {this.state.stage >= 2 &&
             <div style={{display: "flex"}}>
               <div style={{transform: "rotate(180deg)"}}>
+                {this.state.mySide == "before" &&
+                  <div>後手</div>
+                }
+                {this.state.mySide == "after" &&
+                  <div>先手</div>
+                }
                 {enemyHavefield}
               </div>
 
@@ -635,6 +654,12 @@ class Root extends React.Component<{}, IState> {
                 {fieldList}
               </div>
               <div>
+                {this.state.mySide == "before" &&
+                  <div>先手</div>
+                }
+                {this.state.mySide == "after" &&
+                  <div>後手</div>
+                }
                 {myHavefield}
               </div>
             </div>
