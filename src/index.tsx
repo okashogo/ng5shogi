@@ -72,6 +72,7 @@ interface IState {
   moveSelect: number;
   myKomaHave: any[];
   enemyKomaHave: any[];
+  nextTurn: boolean,
 }
 
 const komaList = [
@@ -96,6 +97,7 @@ class Root extends React.Component<{}, IState> {
       squares: Array(9*9).fill(["",""]),
       mySide: "",
       moveSelect: -1,
+      nextTurn: false,
       // myKomaHave: [
       //   [kin, 0],
       //   [gin, 0],
@@ -212,6 +214,20 @@ class Root extends React.Component<{}, IState> {
           this.setState({stage: 2});
           this.setState({enemyUser: change.doc.data().enemyId});
           this.setState({mySide: change.doc.data().challengeSide});
+          if(change.doc.data().challengeSide == "before"){
+            this.setState({nextTurn: true});
+          }
+        }
+      })
+    });
+
+    collection_record.onSnapshot(snapshot => {
+      snapshot.docChanges().forEach(change => {
+        if (change.type === 'added' && this.state.enemyUser == change.doc.data().userId) {
+          console.log('指しました。');
+          // console.log(change.doc.data().userId);
+          // console.log(change.doc.data().enemyId);
+
         }
       })
     });
@@ -284,6 +300,10 @@ class Root extends React.Component<{}, IState> {
                 this.setState({stage: 2});
                 this.setState({mySide: doc.data().challengeSide});
                 this.setState({mySide: this.enemySide()});
+                if(this.state.mySide == "before"){
+                  console.log("lllllll");
+                  this.setState({nextTurn: true});
+                }
               })
               .catch(err => {
                 console.log('Not update!');
@@ -310,65 +330,75 @@ class Root extends React.Component<{}, IState> {
     }
   }
 
+  // コマを置く or 選択する
   moveSelect(value:number){
-    if(value >= 100){// 持ち駒を選択した時
-      this.setState({moveSelect: value});
-      return;
-    }
-
-    if(this.state.moveSelect != -1){ //選択中のとき
-      if(this.state.squares[value][1] == this.state.mySide){ //選択肢を変えるだけ
+    if(this.state.nextTurn){
+      if(value >= 100){// 持ち駒を選択した時
         this.setState({moveSelect: value});
+        return;
       }
 
-      else{
-        if(this.state.moveSelect >= 100){
-          if(this.state.moveSelect == 106){
-            var base2hu = value % 9;
-            for (let base2hu_i = 0; base2hu_i < 9; base2hu_i++) {
+      if(this.state.moveSelect != -1){ //選択中のとき
+        if(this.state.squares[value][1] == this.state.mySide){ //選択肢を変えるだけ
+          this.setState({moveSelect: value});
+        }
+
+        else{
+          if(this.state.moveSelect >= 100){
+            if(this.state.moveSelect == 106){
+              var base2hu = value % 9;
+              for (let base2hu_i = 0; base2hu_i < 9; base2hu_i++) {
                 if(this.state.squares[base2hu + base2hu_i*9][0] == hu){
                   alert("二歩です。");
                   this.setState({moveSelect: -1}); //無選択状態へ
                   return;
                 }
-            }
-          }
-          if(this.state.squares[value][0] == ""){
-            const tmpSquares = this.state.squares;
-            const tmpMyKomaHave = this.state.myKomaHave;
-
-            tmpSquares[value] = [komaList[this.state.moveSelect - 100], this.state.mySide];
-            tmpMyKomaHave[this.state.moveSelect - 100] -= 1;
-            this.setState({squares: tmpSquares});
-            this.setState({myKomaHave: tmpMyKomaHave});
-            console.log(this.state.myKomaHave);// 持ち駒
-          }
-        }else{
-          var komaSelect = this.state.squares[this.state.moveSelect][0];
-
-          if(this.ablePut(value, this.state.squares[this.state.moveSelect][0], this.state.moveSelect)){ //そこに駒が置けるか判定する
-            if(this.gradupJude(value, this.state.squares[this.state.moveSelect][0], this.state.moveSelect)){
-              if(window.confirm("成りますか？")) { // 成るかどうかのconfirm
-                komaSelect = this.gradeUp(this.state.squares[this.state.moveSelect][0]);
               }
             }
-            if(this.state.squares[value][1] == this.enemySide()){ //相手の駒をとる
-              this.MyKomaHaveChange(this.state.myKomaHave, this.state.squares[value][0], 1);
-            }
-            //ただの移動
-            const tmpSquares = this.state.squares;
-            tmpSquares[this.state.moveSelect] = ["", ""];
-            tmpSquares[value] = [komaSelect, this.state.mySide];
-            this.setState({squares: tmpSquares});
-            console.log(this.state.myKomaHave);// 持ち駒
-          }
-        }
-        this.setState({moveSelect: -1}); //無選択状態へ
-      }
+            if(this.state.squares[value][0] == ""){
+              const tmpSquares = this.state.squares;
+              const tmpMyKomaHave = this.state.myKomaHave;
 
-    }else{ //何も選択していない状態
-      if(this.state.squares[value][1] == this.state.mySide){
-        this.setState({moveSelect: value});
+              tmpSquares[value] = [komaList[this.state.moveSelect - 100], this.state.mySide];
+              tmpMyKomaHave[this.state.moveSelect - 100] -= 1;
+              this.setState({squares: tmpSquares});
+              this.setState({myKomaHave: tmpMyKomaHave});
+              console.log(this.state.myKomaHave);// 持ち駒
+
+              this.addRecord(this.state.moveSelect,value);
+            }
+          }else{
+            var komaSelect = this.state.squares[this.state.moveSelect][0];
+
+            if(this.ablePut(value, this.state.squares[this.state.moveSelect][0], this.state.moveSelect)){ //そこに駒が置けるか判定する
+              if(this.gradupJude(value, this.state.squares[this.state.moveSelect][0], this.state.moveSelect)){
+                if(window.confirm("成りますか？")) { // 成るかどうかのconfirm
+                  komaSelect = this.gradeUp(this.state.squares[this.state.moveSelect][0]);
+                }
+              }
+              if(this.state.squares[value][1] == this.enemySide()){ //相手の駒をとる
+                if(this.state.squares[value][0] == ou){
+                  alert('あなたの勝ちです。');
+                }
+                this.MyKomaHaveChange(this.state.myKomaHave, this.state.squares[value][0], 1);
+              }
+              //ただの移動
+              const tmpSquares = this.state.squares;
+              tmpSquares[this.state.moveSelect] = ["", ""];
+              tmpSquares[value] = [komaSelect, this.state.mySide];
+              this.setState({squares: tmpSquares});
+              console.log(this.state.myKomaHave);// 持ち駒
+
+              this.addRecord(this.state.moveSelect,value);
+            }
+          }
+          this.setState({moveSelect: -1}); //無選択状態へ
+        }
+
+      }else{ //何も選択していない状態
+        if(this.state.squares[value][1] == this.state.mySide){
+          this.setState({moveSelect: value});
+        }
       }
     }
   }
@@ -381,6 +411,30 @@ class Root extends React.Component<{}, IState> {
         }
     }
     this.setState({myKomaHave: myKomaHave});
+    var myKomaHaveTotal:number = 0;
+    for (let myKomaHave_i = 0; myKomaHave_i < this.state.myKomaHave.length; myKomaHave_i++) {
+        myKomaHaveTotal += this.state.myKomaHave[myKomaHave_i];
+    }
+    if(myKomaHaveTotal >= 5){
+      alert('持ち駒が５個になったので、あなたの負けです。')
+    }
+  }
+
+  addRecord(beforeValue:number,afterValue:number){
+    collection_record.add({
+          userId: this.state.loginUser.uid,
+          beforeValue: beforeValue,
+          created_at: firebase.firestore.FieldValue.serverTimestamp(),
+          afterValue: afterValue,
+        })
+        .then(doc => {
+          console.log(doc.id + ' added!');
+        })
+        .catch(error => {
+          console.log(error);
+        })
+
+    // this.setState({nextTurn: false});
   }
 
   //そこにコマがおけるか判定
@@ -650,9 +704,17 @@ class Root extends React.Component<{}, IState> {
                 {enemyHavefield}
               </div>
 
-              <div className="field">
-                {fieldList}
-              </div>
+              {this.state.mySide == "before" &&
+                <div className="field">
+                  {fieldList}
+                </div>
+              }
+              {this.state.mySide == "after" &&
+                <div className="field" style={{transform: "rotate(180deg)"}}>
+                  {fieldList}
+                </div>
+              }
+
               <div>
                 {this.state.mySide == "before" &&
                   <div>先手</div>
