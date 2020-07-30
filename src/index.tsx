@@ -64,6 +64,8 @@ class Box extends React.Component<{koma:string[]}> {
 interface IState {
   loginUser : string;
   enemyUser : string;
+  myNickname : string;
+  enemyNickname : string;
   stage: number;
   challengeId : number;
   applyId: number;
@@ -92,6 +94,8 @@ class Root extends React.Component<{}, IState> {
     this.state = {
       loginUser: "",
       enemyUser: "",
+      myNickname : "",
+      enemyNickname : "",
       stage: 0,
       challengeId : 0,
       applyId : 0,
@@ -180,9 +184,10 @@ class Root extends React.Component<{}, IState> {
       snapshot.docChanges().forEach(change => {
         if (change.type === 'modified' && this.state.challengeId == change.doc.data().pass && this.state.loginUser == change.doc.data().userId && change.doc.data().enemyId != "nobody") {
           console.log('applyed!!!');
-          this.setState({stage: 2});
+          this.setState({stage: 3});
           this.setState({enemyUser: change.doc.data().enemyId});
           this.setState({mySide: change.doc.data().challengeSide});
+          this.setState({enemyNickname: change.doc.data().applyNickname});
           if(change.doc.data().challengeSide == "before"){
             this.setState({nextTurn: true});
           }
@@ -238,6 +243,12 @@ class Root extends React.Component<{}, IState> {
   }
 
   // 挑戦状のinputの値を取得
+  input_nickname = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value:string = event.target.value;
+      this.setState({myNickname: value});
+  }
+
+  // 挑戦状のinputの値を取得
   input_challenge = (event: React.ChangeEvent<HTMLInputElement>) => {
       const value:number = Number(event.target.value);
       this.setState({challengeId: value});
@@ -259,9 +270,11 @@ class Root extends React.Component<{}, IState> {
             created_at: firebase.firestore.FieldValue.serverTimestamp(),
             enemyId: "nobody",
             challengeSide: challengeSide,
+            challengeNickname: this.state.myNickname,
           })
           .then(doc => {
             console.log(doc.id + ' added!');
+            this.setState({stage: 2});
           })
           .catch(error => {
             console.log(error);
@@ -295,13 +308,16 @@ class Root extends React.Component<{}, IState> {
                 created_at: doc.data().created_at,
                 enemyId: this.state.loginUser,
                 challengeSide: doc.data().challengeSide,
+                challengeNickname: doc.data().challengeNickname,
+                applyNickname: this.state.myNickname,
               })
               .then(snapshot => {
                 console.log(snapshot)
                 this.setState({enemyUser: doc.data().userId});
-                this.setState({stage: 2});
+                this.setState({stage: 3});
                 this.setState({mySide: doc.data().challengeSide});
                 this.setState({mySide: this.enemySide()});
+                this.setState({enemyNickname: doc.data().challengeNickname})
                 if(this.state.mySide == "before"){
                   this.setState({nextTurn: true});
                 }
@@ -694,7 +710,10 @@ class Root extends React.Component<{}, IState> {
         <div>
           <h1>持ち駒が５個になったら負け将棋</h1>
           {this.state.stage == 0 &&
-            <button onClick={this.login}>login</button>
+            <div>
+              <input id="input_nickname" placeholder="ニックネームを入力" onChange={this.input_nickname}/>
+              <button onClick={this.login}>login</button>
+            </div>
           }
           {this.state.stage >= 1 &&
             <div>
@@ -716,10 +735,20 @@ class Root extends React.Component<{}, IState> {
             </div>
           }
           {
-            this.state.enemyUser != "" &&
-            <div>{this.state.loginUser} VS {this.state.enemyUser}</div>
+            this.state.stage == 2 &&
+            <div>
+              <div>ようこそ、{this.state.myNickname}さん</div>
+              <div>対戦相手を探しています。。。</div>
+            </div>
           }
-          {this.state.stage >= 2 &&
+          {
+            this.state.stage >= 3 && this.state.enemyUser != "" &&
+            <div>
+              {this.state.myNickname} VS {this.state.enemyNickname}
+              <br />
+            </div>
+          }
+          {this.state.stage >= 3 &&
             <div style={{display: "flex"}}>
               <div style={{transform: "rotate(180deg)"}}>
                 {this.state.mySide == "before" &&
