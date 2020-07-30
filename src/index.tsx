@@ -298,33 +298,57 @@ class Root extends React.Component<{}, IState> {
   }
 
   moveSelect(value:number){
-    if(value == 101){
+    if(value >= 100){// 持ち駒を選択した時
       this.setState({moveSelect: value});
       return;
     }
+
     if(this.state.moveSelect != -1){ //選択中のとき
       if(this.state.squares[value][1] == this.state.mySide){ //選択肢を変えるだけ
         this.setState({moveSelect: value});
       }
 
-      else{ //移動する
-        var komaSelect = this.state.squares[this.state.moveSelect][0];
+      else{
+        if(this.state.moveSelect >= 100){
+          if(this.state.moveSelect == 106){
+            var base2hu = value % 9;
+            for (let base2hu_i = 0; base2hu_i < 9; base2hu_i++) {
+                if(this.state.squares[base2hu + base2hu_i*9][0] == hu){
+                  alert("二歩です。");
+                  this.setState({moveSelect: -1}); //無選択状態へ
+                  return;
+                }
+            }
+          }
+          if(this.state.squares[value][0] == ""){
+            const tmpSquares = this.state.squares;
+            const tmpMyKomaHave = this.state.myKomaHave;
 
-        if(this.ablePut(value, this.state.squares[this.state.moveSelect][0], this.state.moveSelect)){ //そこに駒が置けるか判定する
-          if(this.gradupJude(value, this.state.squares[this.state.moveSelect][0], this.state.moveSelect)){
+            tmpSquares[value] = [komaList[this.state.moveSelect - 100], this.state.mySide];
+            tmpMyKomaHave[this.state.moveSelect - 100] -= 1;
+            this.setState({squares: tmpSquares});
+            this.setState({myKomaHave: tmpMyKomaHave});
+            console.log(this.state.myKomaHave);// 持ち駒
+          }
+        }else{
+          var komaSelect = this.state.squares[this.state.moveSelect][0];
+
+          if(this.ablePut(value, this.state.squares[this.state.moveSelect][0], this.state.moveSelect)){ //そこに駒が置けるか判定する
+            if(this.gradupJude(value, this.state.squares[this.state.moveSelect][0], this.state.moveSelect)){
               if(window.confirm("成りますか？")) { // 成るかどうかのconfirm
-                  komaSelect = this.gradeUp(this.state.squares[this.state.moveSelect][0]);
+                komaSelect = this.gradeUp(this.state.squares[this.state.moveSelect][0]);
               }
+            }
+            if(this.state.squares[value][1] == this.enemySide()){ //相手の駒をとる
+              this.MyKomaHaveChange(this.state.myKomaHave, this.state.squares[value][0], 1);
+            }
+            //ただの移動
+            const tmpSquares = this.state.squares;
+            tmpSquares[this.state.moveSelect] = ["", ""];
+            tmpSquares[value] = [komaSelect, this.state.mySide];
+            this.setState({squares: tmpSquares});
+            console.log(this.state.myKomaHave);// 持ち駒
           }
-          if(this.state.squares[value][1] == this.enemySide()){ //相手の駒をとる
-            this.MyKomaHaveChange(this.state.myKomaHave, this.state.squares[value][0], 1);
-          }
-          //ただの移動
-          const tmpSquares = this.state.squares;
-          tmpSquares[this.state.moveSelect] = ["", ""];
-          tmpSquares[value] = [komaSelect, this.state.mySide];
-          this.setState({squares: tmpSquares});
-          console.log(this.state.myKomaHave);// 持ち駒
         }
         this.setState({moveSelect: -1}); //無選択状態へ
       }
@@ -477,11 +501,13 @@ class Root extends React.Component<{}, IState> {
     return false;
   }
 
+  //金の動き
   kinMove(value:number, moveSelect:number, direct:number){
     if(value == moveSelect + 9*direct || value == moveSelect + 9*direct - 1 || value == moveSelect + 9*direct + 1 || value == moveSelect - 9*direct|| value == moveSelect - 1|| value == moveSelect + 1){
       return true;
     }
   }
+
   //飛車 or 角の動き
   hishakakuMove(moveSelect:number, value:number, shiftNum:number){
     var direct;
@@ -556,13 +582,16 @@ class Root extends React.Component<{}, IState> {
 
     const myHavefield = komaList.map((output: string, key) => {
       if(this.state.myKomaHave[key] != 0){
-        return <h3>{output}×{this.state.myKomaHave[key]}</h3>;
+        if(this.state.moveSelect == key + 100){
+          return <h3 style={{display: "flex"}}><div className="moveSelect" onClick={this.moveSelect.bind(this,key+100)}>{output}</div>×{this.state.myKomaHave[key]}</h3>;
+        }
+        return <h3 style={{display: "flex"}}><div onClick={this.moveSelect.bind(this,key+100)}>{output}</div>×{this.state.myKomaHave[key]}</h3>;
       }
     });
 
     const enemyHavefield = komaList.map((output: string, key) => {
       if(this.state.enemyKomaHave[key] != 0){
-        return <h3>{output}×{this.state.enemyKomaHave[key]}</h3>;
+        return <h3 style={{display: "flex"}}><div>{output}</div>×{this.state.enemyKomaHave[key]}</h3>;
       }
     });
 
