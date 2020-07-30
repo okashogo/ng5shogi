@@ -746,6 +746,12 @@ class Root extends React.Component<{}, IState> {
             <div>
               {this.state.myNickname} VS {this.state.enemyNickname}
               <br />
+              {this.state.nextTurn == true &&
+                <h2>あなたの番です</h2>
+              }
+              {this.state.nextTurn == false &&
+                <h2>相手の番です</h2>
+              }
             </div>
           }
           {this.state.stage >= 3 &&
