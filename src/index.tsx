@@ -221,6 +221,7 @@ class Root extends React.Component<{}, IState> {
       })
     });
 
+    // 相手が指した時
     collection_record.onSnapshot(snapshot => {
       snapshot.docChanges().forEach(change => {
         if (change.type === 'added' && this.state.enemyUser == change.doc.data().userId) {
@@ -237,12 +238,23 @@ class Root extends React.Component<{}, IState> {
             moveKoma = this.state.squares[beforeValue][0];
           }
           if(tmpSquares[afterValue][0] != ""){
+            if(tmpSquares[afterValue][0] == ou){
+              alert('あなたの負けです。');
+            }
+            console.log(tmpSquares[afterValue][0]);
             for (let komaList_i = 0; komaList_i < komaList.length; komaList_i++) {
                 if(komaList[komaList_i] == tmpSquares[afterValue][0]){
                   tmpEnemyKomaHave[komaList_i] += 1;
+                  var enemyKomaHaveTotal:number = 0;
+                  for (let enemyKomaHave_i = 0; enemyKomaHave_i < tmpEnemyKomaHave.length; enemyKomaHave_i++) {
+                      enemyKomaHaveTotal += tmpEnemyKomaHave[enemyKomaHave_i];
+                  }
+                  if(enemyKomaHaveTotal >= 5){
+                    alert('相手の持ち駒が５個になったので、あなたの勝ちです。')
+                  }
                 }
             }
-            switch(tmpSquares[beforeValue][0]){
+            switch(tmpSquares[afterValue][0]){
               case ryu:
                 tmpEnemyKomaHave[0] += 1;
                 break;
@@ -276,7 +288,6 @@ class Root extends React.Component<{}, IState> {
           }
           this.setState({squares: tmpSquares});
           this.setState({nextTurn: true});
-          // this.setState({myKomaHave: tmpMyKomaHave});
         }
       })
     });
