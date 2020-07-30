@@ -76,6 +76,7 @@ interface IState {
   enemyKomaHave: any[];
   nextTurn: boolean,
   playing: boolean,
+  countdown: number;
 }
 
 const komaList = [
@@ -114,6 +115,7 @@ class Root extends React.Component<{}, IState> {
       ],
       enemyKomaHave: [0, 0, 0, 0, 0, 0, 0],
       playing: true,
+      countdown: -1,
     };
 
     //歩
@@ -179,6 +181,10 @@ class Root extends React.Component<{}, IState> {
   //常に動いている関数
   componentDidMount  = async () =>{
 
+    setInterval(() => {
+        this.countDown();
+      }, 1000);
+
     //申し込みを受けた時
     collection_challenge.onSnapshot(snapshot => {
       snapshot.docChanges().forEach(change => {
@@ -190,6 +196,7 @@ class Root extends React.Component<{}, IState> {
           this.setState({enemyNickname: change.doc.data().applyNickname});
           if(change.doc.data().challengeSide == "before"){
             this.setState({nextTurn: true});
+            this.setState({countdown: 30});
           }
         }
       })
@@ -237,6 +244,7 @@ class Root extends React.Component<{}, IState> {
           }
           this.setState({squares: tmpSquares});
           this.setState({nextTurn: true});
+          this.setState({countdown: 30});
         }
       })
     });
@@ -319,6 +327,7 @@ class Root extends React.Component<{}, IState> {
                 this.setState({enemyNickname: doc.data().challengeNickname})
                 if(this.state.mySide == "before"){
                   this.setState({nextTurn: true});
+                  this.setState({countdown: 30});
                 }
               })
               .catch(err => {
@@ -380,6 +389,7 @@ class Root extends React.Component<{}, IState> {
               this.setState({squares: tmpSquares});
               this.setState({myKomaHave: tmpMyKomaHave});
               this.addRecord(this.state.moveSelect,value, false);
+              this.setState({countdown: -1});
             }
           }else{
             var komaSelect = this.state.squares[this.state.moveSelect][0];
@@ -406,6 +416,7 @@ class Root extends React.Component<{}, IState> {
               tmpSquares[value] = [komaSelect, this.state.mySide];
               this.setState({squares: tmpSquares});
               this.addRecord(this.state.moveSelect,value,gradeUpFlag);
+              this.setState({countdown: -1});
             }
           }
           this.setState({moveSelect: -1}); //無選択状態へ
@@ -456,7 +467,7 @@ class Root extends React.Component<{}, IState> {
     }
     if(myKomaHaveTotal >= 5){
       if(who == 1){
-        alert('持ち駒が５個になったので、あなたの負けです。')
+        alert('持ち駒が５個になったので、あなたのmoveSelectけです。')
       }else{
         alert('相手の持ち駒が５個になったので、あなたの勝ちです。')
       }
@@ -668,6 +679,16 @@ class Root extends React.Component<{}, IState> {
     }
   }
 
+  countDown(){
+    if(this.state.countdown > 0){
+      this.setState({countdown: this.state.countdown - 1});
+      if(this.state.countdown == 0){
+        alert('あなたの負けです。');
+        this.setState({playing: false}); //この後に指すことができないようにする。
+      }
+    }
+  }
+
   render() {
     const fieldList = this.state.squares.map((output: string[], key) => {
       if(this.state.moveSelect == key){
@@ -740,6 +761,9 @@ class Root extends React.Component<{}, IState> {
             <div>
               {this.state.myNickname} VS {this.state.enemyNickname}
               <br />
+              { this.state.countdown > 0 &&
+                <h3>残り {this.state.countdown} 秒</h3>
+              }
               {this.state.nextTurn == true &&
                 <h2>あなたの番です</h2>
               }
