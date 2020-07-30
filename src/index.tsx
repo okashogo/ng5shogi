@@ -224,10 +224,59 @@ class Root extends React.Component<{}, IState> {
     collection_record.onSnapshot(snapshot => {
       snapshot.docChanges().forEach(change => {
         if (change.type === 'added' && this.state.enemyUser == change.doc.data().userId) {
-          console.log('指しました。');
-          // console.log(change.doc.data().userId);
-          // console.log(change.doc.data().enemyId);
+          const gradeUpFlag = change.doc.data().gradeUp;
+          const beforeValue = change.doc.data().beforeValue;
+          const afterValue = change.doc.data().afterValue;
+          const tmpSquares = this.state.squares;
+          const tmpEnemyKomaHave = this.state.enemyKomaHave;
+          var moveKoma: any;
+          if(beforeValue >= 100){
+            moveKoma = komaList[beforeValue - 100];
+            tmpEnemyKomaHave[beforeValue - 100] -= 1;
+          }else{
+            moveKoma = this.state.squares[beforeValue][0];
+          }
+          if(tmpSquares[afterValue][0] != ""){
+            for (let komaList_i = 0; komaList_i < komaList.length; komaList_i++) {
+                if(komaList[komaList_i] == tmpSquares[afterValue][0]){
+                  tmpEnemyKomaHave[komaList_i] += 1;
+                }
+            }
+            switch(tmpSquares[beforeValue][0]){
+              case ryu:
+                tmpEnemyKomaHave[0] += 1;
+                break;
+              case uma:
+                tmpEnemyKomaHave[1] += 1;
+                break;
+              case nariGin:
+                tmpEnemyKomaHave[3] += 1;
+                break;
+              case nariKei:
+                tmpEnemyKomaHave[4] += 1;
+                break;
+              case nariKyo:
+                tmpEnemyKomaHave[5] += 1;
+                break;
+              case tokin:
+                tmpEnemyKomaHave[6] += 1;
+                break;
 
+              default:
+                break;
+            }
+
+            this.setState({enemyKomaHave: tmpEnemyKomaHave});
+          }
+          tmpSquares[beforeValue] = ["", ""];
+          if(gradeUpFlag){
+            tmpSquares[afterValue] = [this.gradeUp(moveKoma), this.enemySide()];
+          }else{
+            tmpSquares[afterValue] = [moveKoma, this.enemySide()];
+          }
+          this.setState({squares: tmpSquares});
+          this.setState({nextTurn: true});
+          // this.setState({myKomaHave: tmpMyKomaHave});
         }
       })
     });
@@ -301,7 +350,6 @@ class Root extends React.Component<{}, IState> {
                 this.setState({mySide: doc.data().challengeSide});
                 this.setState({mySide: this.enemySide()});
                 if(this.state.mySide == "before"){
-                  console.log("lllllll");
                   this.setState({nextTurn: true});
                 }
               })
@@ -365,15 +413,17 @@ class Root extends React.Component<{}, IState> {
               this.setState({myKomaHave: tmpMyKomaHave});
               console.log(this.state.myKomaHave);// 持ち駒
 
-              this.addRecord(this.state.moveSelect,value);
+              this.addRecord(this.state.moveSelect,value, false);
             }
           }else{
             var komaSelect = this.state.squares[this.state.moveSelect][0];
+            var gradeUpFlag: boolean = false;
 
             if(this.ablePut(value, this.state.squares[this.state.moveSelect][0], this.state.moveSelect)){ //そこに駒が置けるか判定する
               if(this.gradupJude(value, this.state.squares[this.state.moveSelect][0], this.state.moveSelect)){
                 if(window.confirm("成りますか？")) { // 成るかどうかのconfirm
                   komaSelect = this.gradeUp(this.state.squares[this.state.moveSelect][0]);
+                  gradeUpFlag = true;
                 }
               }
               if(this.state.squares[value][1] == this.enemySide()){ //相手の駒をとる
@@ -389,7 +439,7 @@ class Root extends React.Component<{}, IState> {
               this.setState({squares: tmpSquares});
               console.log(this.state.myKomaHave);// 持ち駒
 
-              this.addRecord(this.state.moveSelect,value);
+              this.addRecord(this.state.moveSelect,value,gradeUpFlag);
             }
           }
           this.setState({moveSelect: -1}); //無選択状態へ
@@ -410,6 +460,29 @@ class Root extends React.Component<{}, IState> {
           myKomaHave[komaList_i] += num;
         }
     }
+    switch(koma){
+      case ryu:
+        myKomaHave[0] += 1;
+        break;
+      case uma:
+        myKomaHave[1] += 1;
+        break;
+      case nariGin:
+        myKomaHave[3] += 1;
+        break;
+      case nariKei:
+        myKomaHave[4] += 1;
+        break;
+      case nariKyo:
+        myKomaHave[5] += 1;
+        break;
+      case tokin:
+        myKomaHave[6] += 1;
+        break;
+
+      default:
+        break;
+    }
     this.setState({myKomaHave: myKomaHave});
     var myKomaHaveTotal:number = 0;
     for (let myKomaHave_i = 0; myKomaHave_i < this.state.myKomaHave.length; myKomaHave_i++) {
@@ -420,12 +493,13 @@ class Root extends React.Component<{}, IState> {
     }
   }
 
-  addRecord(beforeValue:number,afterValue:number){
+  addRecord(beforeValue:number,afterValue:number, gradeUp: boolean){
     collection_record.add({
           userId: this.state.loginUser.uid,
           beforeValue: beforeValue,
           created_at: firebase.firestore.FieldValue.serverTimestamp(),
           afterValue: afterValue,
+          gradeUp: gradeUp,
         })
         .then(doc => {
           console.log(doc.id + ' added!');
@@ -434,7 +508,7 @@ class Root extends React.Component<{}, IState> {
           console.log(error);
         })
 
-    // this.setState({nextTurn: false});
+    this.setState({nextTurn: false});
   }
 
   //そこにコマがおけるか判定
