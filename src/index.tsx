@@ -62,7 +62,7 @@ class Box extends React.Component<{koma:string[]}> {
 }
 
 interface IState {
-  loginUser : any;
+  loginUser : string;
   enemyUser : string;
   stage: number;
   challengeId : number;
@@ -73,6 +73,7 @@ interface IState {
   myKomaHave: any[];
   enemyKomaHave: any[];
   nextTurn: boolean,
+  playing: boolean,
 }
 
 const komaList = [
@@ -89,7 +90,7 @@ class Root extends React.Component<{}, IState> {
   constructor(props : string[]) {
     super(props);
     this.state = {
-      loginUser: null,
+      loginUser: "",
       enemyUser: "",
       stage: 0,
       challengeId : 0,
@@ -98,15 +99,6 @@ class Root extends React.Component<{}, IState> {
       mySide: "",
       moveSelect: -1,
       nextTurn: false,
-      // myKomaHave: [
-      //   [kin, 0],
-      //   [gin, 0],
-      //   [hisha, 0],
-      //   [kaku, 0],
-      //   [kei, 0],
-      //   [kyo, 0],
-      //   [hu, 0],
-      // ],
       myKomaHave: [
         0, //hisha
         0, //kaku
@@ -116,15 +108,8 @@ class Root extends React.Component<{}, IState> {
         0, //kyo
         0, //hu
       ],
-      enemyKomaHave: [
-        0, //hisha
-        0, //kaku
-        0, //kin
-        0, //gin
-        0, //kei
-        0, //kyo
-        0, //hu
-      ],
+      enemyKomaHave: [0, 0, 0, 0, 0, 0, 0],
+      playing: true,
     };
 
     //歩
@@ -155,12 +140,6 @@ class Root extends React.Component<{}, IState> {
 
       this.state.squares[4] = [ou, "after"];
       this.state.squares[76] = [ou, "before"];
-
-      // //桂
-      // this.state.squares[1] = kei;
-      // this.state.squares[7] = kei;
-      // this.state.squares[73] = kei;
-      // this.state.squares[79] = kei;
     }
 
 
@@ -179,9 +158,9 @@ class Root extends React.Component<{}, IState> {
     auth.onAuthStateChanged(user => {
         if (user) {
           console.log(user.uid);
-          this.setState({loginUser: user});
+          this.setState({loginUser: user.uid});
           this.setState({stage: 1});
-          console.log(this.state.loginUser.uid);
+          console.log(this.state.loginUser);
         }
       });
   }
@@ -189,28 +168,18 @@ class Root extends React.Component<{}, IState> {
   logout(){
     console.log("logout");
     auth.signInAnonymously();
-    this.setState({loginUser: null});
+    this.setState({loginUser: ""});
     this.setState({stage: 0});
   }
 
+  //常に動いている関数
   componentDidMount  = async () =>{
-    // collection_record.onSnapshot(snapshot => {
-    //   snapshot.docChanges().forEach(async change => {
-    //     if (change.type === 'added') {
-    //       console.log("ADD!!");
-    //       console.log(change.doc.data().userId);
-    //       console.log(change.doc.data().message);
-    //     }
-    //   })
-    // });
 
     //申し込みを受けた時
     collection_challenge.onSnapshot(snapshot => {
       snapshot.docChanges().forEach(change => {
-        if (change.type === 'modified' && this.state.challengeId == change.doc.data().pass && this.state.loginUser.uid == change.doc.data().userId && change.doc.data().enemyId != "nobody") {
+        if (change.type === 'modified' && this.state.challengeId == change.doc.data().pass && this.state.loginUser == change.doc.data().userId && change.doc.data().enemyId != "nobody") {
           console.log('applyed!!!');
-          // console.log(change.doc.data().userId);
-          // console.log(change.doc.data().enemyId);
           this.setState({stage: 2});
           this.setState({enemyUser: change.doc.data().enemyId});
           this.setState({mySide: change.doc.data().challengeSide});
@@ -240,42 +209,17 @@ class Root extends React.Component<{}, IState> {
           if(tmpSquares[afterValue][0] != ""){
             if(tmpSquares[afterValue][0] == ou){
               alert('あなたの負けです。');
+              this.setState({playing: false}); //この後に指すことができないようにする。
             }
-            console.log(tmpSquares[afterValue][0]);
-            for (let komaList_i = 0; komaList_i < komaList.length; komaList_i++) {
-                if(komaList[komaList_i] == tmpSquares[afterValue][0]){
-                  tmpEnemyKomaHave[komaList_i] += 1;
-                  var enemyKomaHaveTotal:number = 0;
-                  for (let enemyKomaHave_i = 0; enemyKomaHave_i < tmpEnemyKomaHave.length; enemyKomaHave_i++) {
-                      enemyKomaHaveTotal += tmpEnemyKomaHave[enemyKomaHave_i];
-                  }
-                  if(enemyKomaHaveTotal >= 5){
-                    alert('相手の持ち駒が５個になったので、あなたの勝ちです。')
-                  }
-                }
-            }
-            switch(tmpSquares[afterValue][0]){
-              case ryu:
-                tmpEnemyKomaHave[0] += 1;
-                break;
-              case uma:
-                tmpEnemyKomaHave[1] += 1;
-                break;
-              case nariGin:
-                tmpEnemyKomaHave[3] += 1;
-                break;
-              case nariKei:
-                tmpEnemyKomaHave[4] += 1;
-                break;
-              case nariKyo:
-                tmpEnemyKomaHave[5] += 1;
-                break;
-              case tokin:
-                tmpEnemyKomaHave[6] += 1;
-                break;
+            this.MyKomaHaveChange(tmpEnemyKomaHave, tmpSquares[afterValue][0], 0)
 
-              default:
-                break;
+            var enemyKomaHaveTotal:number = 0;
+            for (let enemyKomaHave_i = 0; enemyKomaHave_i < tmpEnemyKomaHave.length; enemyKomaHave_i++) {
+                enemyKomaHaveTotal += tmpEnemyKomaHave[enemyKomaHave_i];
+            }
+            if(enemyKomaHaveTotal >= 5){
+              alert('相手の持ち駒が５個になったので、あなたの勝ちです。');
+              this.setState({playing: false});
             }
 
             this.setState({enemyKomaHave: tmpEnemyKomaHave});
@@ -293,6 +237,7 @@ class Root extends React.Component<{}, IState> {
     });
   }
 
+  // 挑戦状のinputの値を取得
   input_challenge = (event: React.ChangeEvent<HTMLInputElement>) => {
       const value:number = Number(event.target.value);
       this.setState({challengeId: value});
@@ -309,7 +254,7 @@ class Root extends React.Component<{}, IState> {
         challengeSide = "after";
       }
       collection_challenge.add({
-            userId: this.state.loginUser.uid,
+            userId: this.state.loginUser,
             pass: this.state.challengeId,
             created_at: firebase.firestore.FieldValue.serverTimestamp(),
             enemyId: "nobody",
@@ -325,9 +270,9 @@ class Root extends React.Component<{}, IState> {
     else{
       alert("0以外の半角数字を入力して下さい");
     }
-    // console.log(<HTMLInputElement>document.getElementById("input_challenge").value);
   }
 
+  // 申し込みのinputの値を取得
   input_apply = (event: React.ChangeEvent<HTMLInputElement>) => {
       const value:number = Number(event.target.value);
       this.setState({applyId: value});
@@ -342,20 +287,17 @@ class Root extends React.Component<{}, IState> {
           if (snapshot.empty) {
             return;
           }
-
           snapshot.forEach(doc => {
-
             collection_challenge.doc(doc.id)
               .set({
                 userId: doc.data().userId,
                 pass: doc.data().pass,
                 created_at: doc.data().created_at,
-                enemyId: this.state.loginUser.uid,
+                enemyId: this.state.loginUser,
                 challengeSide: doc.data().challengeSide,
               })
               .then(snapshot => {
                 console.log(snapshot)
-                console.log("OK!")
                 this.setState({enemyUser: doc.data().userId});
                 this.setState({stage: 2});
                 this.setState({mySide: doc.data().challengeSide});
@@ -365,7 +307,6 @@ class Root extends React.Component<{}, IState> {
                 }
               })
               .catch(err => {
-                console.log('Not update!');
                 console.log(err);
               });
 
@@ -378,9 +319,9 @@ class Root extends React.Component<{}, IState> {
     else{
       alert("0以外の半角数字を入力して下さい");
     }
-    // console.log(<HTMLInputElement>document.getElementById("input_challenge").value);
   }
 
+  // 相手の先手後手を取得
   enemySide() {
     if(this.state.mySide == "before"){
       return "after";
@@ -391,7 +332,7 @@ class Root extends React.Component<{}, IState> {
 
   // コマを置く or 選択する
   moveSelect(value:number){
-    if(this.state.nextTurn){
+    if(this.state.nextTurn && this.state.playing){
       if(value >= 100){// 持ち駒を選択した時
         this.setState({moveSelect: value});
         return;
@@ -422,8 +363,6 @@ class Root extends React.Component<{}, IState> {
               tmpMyKomaHave[this.state.moveSelect - 100] -= 1;
               this.setState({squares: tmpSquares});
               this.setState({myKomaHave: tmpMyKomaHave});
-              console.log(this.state.myKomaHave);// 持ち駒
-
               this.addRecord(this.state.moveSelect,value, false);
             }
           }else{
@@ -438,8 +377,10 @@ class Root extends React.Component<{}, IState> {
                 }
               }
               if(this.state.squares[value][1] == this.enemySide()){ //相手の駒をとる
+                // ここの3行は詰み関数が完成すると消す
                 if(this.state.squares[value][0] == ou){
                   alert('あなたの勝ちです。');
+                  this.setState({playing: false});
                 }
                 this.MyKomaHaveChange(this.state.myKomaHave, this.state.squares[value][0], 1);
               }
@@ -448,8 +389,6 @@ class Root extends React.Component<{}, IState> {
               tmpSquares[this.state.moveSelect] = ["", ""];
               tmpSquares[value] = [komaSelect, this.state.mySide];
               this.setState({squares: tmpSquares});
-              console.log(this.state.myKomaHave);// 持ち駒
-
               this.addRecord(this.state.moveSelect,value,gradeUpFlag);
             }
           }
@@ -465,10 +404,10 @@ class Root extends React.Component<{}, IState> {
   }
 
   // 持ち駒の数を変更
-  MyKomaHaveChange(myKomaHave:any, koma: string, num: number){
+  MyKomaHaveChange(myKomaHave:any, koma: string, who: number){
     for (let komaList_i = 0; komaList_i < komaList.length; komaList_i++) {
         if(komaList[komaList_i] == koma){
-          myKomaHave[komaList_i] += num;
+          myKomaHave[komaList_i] += 1;
         }
     }
     switch(koma){
@@ -500,13 +439,18 @@ class Root extends React.Component<{}, IState> {
         myKomaHaveTotal += this.state.myKomaHave[myKomaHave_i];
     }
     if(myKomaHaveTotal >= 5){
-      alert('持ち駒が５個になったので、あなたの負けです。')
+      if(who == 1){
+        alert('持ち駒が５個になったので、あなたの負けです。')
+      }else{
+        alert('相手の持ち駒が５個になったので、あなたの勝ちです。')
+      }
+      this.setState({playing: false});
     }
   }
 
   addRecord(beforeValue:number,afterValue:number, gradeUp: boolean){
     collection_record.add({
-          userId: this.state.loginUser.uid,
+          userId: this.state.loginUser,
           beforeValue: beforeValue,
           created_at: firebase.firestore.FieldValue.serverTimestamp(),
           afterValue: afterValue,
@@ -535,8 +479,6 @@ class Root extends React.Component<{}, IState> {
 
     switch (koma) { // 盤上のコマを動かす場合
       case hu:
-        console.log(moveSelect)
-        console.log(value)
         if(value == moveSelect + 9*direct){
           return true;
         }
@@ -622,37 +564,6 @@ class Root extends React.Component<{}, IState> {
     return false;
   }
 
-  // コマの成れるか判定
-  gradupJude(value: number, koma:string, moveSelect:number){
-    let gradeCanKomaList = [
-      hisha,
-      kaku,
-      gin,
-      kei,
-      kyo,
-      hu,
-    ]
-    if(gradeCanKomaList.includes(koma)){
-      if(this.state.mySide == "before"){
-        if(value <= 26){
-          return true;
-        }
-        if(moveSelect <= 26){
-          return true;
-        }
-      }
-      if(this.state.mySide == "after"){
-        if(value >= 54){
-          return true;
-        }
-        if(moveSelect >= 54){
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
   //金の動き
   kinMove(value:number, moveSelect:number, direct:number){
     if(value == moveSelect + 9*direct || value == moveSelect + 9*direct - 1 || value == moveSelect + 9*direct + 1 || value == moveSelect - 9*direct|| value == moveSelect - 1|| value == moveSelect + 1){
@@ -695,7 +606,38 @@ class Root extends React.Component<{}, IState> {
     }
   }
 
-  //コマがどのコマに成るか判定
+  // コマの成れるか判定
+  gradupJude(value: number, koma:string, moveSelect:number){
+    let gradeCanKomaList = [
+      hisha,
+      kaku,
+      gin,
+      kei,
+      kyo,
+      hu,
+    ]
+    if(gradeCanKomaList.includes(koma)){
+      if(this.state.mySide == "before"){
+        if(value <= 26){
+          return true;
+        }
+        if(moveSelect <= 26){
+          return true;
+        }
+      }
+      if(this.state.mySide == "after"){
+        if(value >= 54){
+          return true;
+        }
+        if(moveSelect >= 54){
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  //コマがどのコマに成るか
   gradeUp(koma:string){
     switch (koma) {
       case hisha:
@@ -775,7 +717,7 @@ class Root extends React.Component<{}, IState> {
           }
           {
             this.state.enemyUser != "" &&
-            <div>{this.state.loginUser.uid} VS {this.state.enemyUser}</div>
+            <div>{this.state.loginUser} VS {this.state.enemyUser}</div>
           }
           {this.state.stage >= 2 &&
             <div style={{display: "flex"}}>
