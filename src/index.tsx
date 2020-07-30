@@ -257,7 +257,6 @@ class Root extends React.Component<{}, IState> {
   //挑戦状を出した時
   submit_challenge(){
     if(this.state.challengeId != 0){
-      console.log("submit_challenge");
       var challengeSide:string;
       if(Math.floor(Math.random() * 2)){
         challengeSide = "before";
@@ -361,10 +360,11 @@ class Root extends React.Component<{}, IState> {
 
         else{
           if(this.state.moveSelect >= 100){
+            // 二歩の判定
             if(this.state.moveSelect == 106){
               var base2hu = value % 9;
               for (let base2hu_i = 0; base2hu_i < 9; base2hu_i++) {
-                if(this.state.squares[base2hu + base2hu_i*9][0] == hu){
+                if(this.state.squares[base2hu + base2hu_i*9][0] == hu && this.state.squares[base2hu + base2hu_i*9][1] == this.state.mySide){
                   alert("二歩です。");
                   this.setState({moveSelect: -1}); //無選択状態へ
                   return;
@@ -512,9 +512,12 @@ class Root extends React.Component<{}, IState> {
           return true;
         }
       case kyo:
-        var shiftCell:number = Math.floor((moveSelect - value)/9);
+        var shiftCell:number = Math.abs(Math.floor((moveSelect - value)/9));
         if((moveSelect - value) % 9 == 0 && shiftCell > 0){
           for (let shiftCell_i = 1; shiftCell_i <= shiftCell; shiftCell_i++) {
+            if(moveSelect + shiftCell_i * 9 * direct == value){
+              return true;
+            }
             if(this.state.squares[moveSelect + shiftCell_i * 9 * direct][0] != ""){
               return false;
             }
@@ -602,16 +605,7 @@ class Root extends React.Component<{}, IState> {
       }
       shiftCount = Math.abs(Math.floor((moveSelect - value)/shiftNum));
       for (let shiftCell_i = 1; shiftCell_i <= shiftCount; shiftCell_i++) {
-        console.log(this.state.squares[moveSelect + shiftCell_i * shiftNum * direct][0])
-        // console.log(this.state.squares[moveSelect + shiftCell_i * 10])
-        // console.log(shiftCell_i)
-        // console.log(moveSelect + shiftCell_i * 10)
-        // console.log(moveSelect + shiftCell_i * -10)
         if(this.state.squares[moveSelect + shiftCell_i * shiftNum * direct][0] != ""){
-          console.log(moveSelect + shiftCell_i * shiftNum * direct);
-          console.log(this.enemySide());
-          console.log(moveSelect + shiftCell_i * shiftNum * direct);
-          console.log(this.state.squares[moveSelect + shiftCell_i * shiftNum * direct]);
           if(moveSelect + shiftCell_i * shiftNum * direct == value && this.state.squares[moveSelect + shiftCell_i * shiftNum * direct][1] == this.enemySide()){
             return true;
           }
