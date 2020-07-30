@@ -7,8 +7,6 @@ import "firebase/auth";
 import "firebase/firebase-firestore";
 import firebase from "firebase";
 
-const B = require('./img/B.jpg').default;
-
 const ou = "王";
 const hisha = "飛"; // 1
 const kaku = "角"; // 2
@@ -71,7 +69,7 @@ interface IState {
   applyId: number;
   squares: any[];
   mySide: string;
-  moveSelct: number;
+  moveSelect: number;
   myKomaHave: any[];
   enemyKomaHave: any[];
 }
@@ -97,7 +95,7 @@ class Root extends React.Component<{}, IState> {
       applyId : 0,
       squares: Array(9*9).fill(["",""]),
       mySide: "before",
-      moveSelct: -1,
+      moveSelect: -1,
       // myKomaHave: [
       //   [kin, 0],
       //   [gin, 0],
@@ -299,23 +297,23 @@ class Root extends React.Component<{}, IState> {
     }
   }
 
-  moveSelct(value:number){
+  moveSelect(value:number){
     if(value == 101){
-      this.setState({moveSelct: value});
+      this.setState({moveSelect: value});
       return;
     }
-    if(this.state.moveSelct != -1){ //選択中のとき
+    if(this.state.moveSelect != -1){ //選択中のとき
       if(this.state.squares[value][1] == this.state.mySide){ //選択肢を変えるだけ
-        this.setState({moveSelct: value});
+        this.setState({moveSelect: value});
       }
 
       else{ //移動する
-        var komaSelect = this.state.squares[this.state.moveSelct][0];
+        var komaSelect = this.state.squares[this.state.moveSelect][0];
 
-        if(true){ //そこに駒が置けるか判定する
-          if(this.gradupJude(value, this.state.squares[this.state.moveSelct][0], this.state.moveSelct)){
+        if(this.ablePut(value, this.state.squares[this.state.moveSelect][0], this.state.moveSelect)){ //そこに駒が置けるか判定する
+          if(this.gradupJude(value, this.state.squares[this.state.moveSelect][0], this.state.moveSelect)){
               if(window.confirm("成りますか？")) { // 成るかどうかのconfirm
-                  komaSelect = this.gradeUp(this.state.squares[this.state.moveSelct][0]);
+                  komaSelect = this.gradeUp(this.state.squares[this.state.moveSelect][0]);
               }
           }
           if(this.state.squares[value][1] == this.enemySide()){ //相手の駒をとる
@@ -323,17 +321,17 @@ class Root extends React.Component<{}, IState> {
           }
           //ただの移動
           const tmpSquares = this.state.squares;
-          tmpSquares[this.state.moveSelct] = ["", ""];
+          tmpSquares[this.state.moveSelect] = ["", ""];
           tmpSquares[value] = [komaSelect, this.state.mySide];
           this.setState({squares: tmpSquares});
-          console.log(this.state.myKomaHave);
+          console.log(this.state.myKomaHave);// 持ち駒
         }
-        this.setState({moveSelct: -1}); //無選択状態へ
+        this.setState({moveSelect: -1}); //無選択状態へ
       }
 
     }else{ //何も選択していない状態
       if(this.state.squares[value][1] == this.state.mySide){
-        this.setState({moveSelct: value});
+        this.setState({moveSelect: value});
       }
     }
   }
@@ -348,8 +346,108 @@ class Root extends React.Component<{}, IState> {
     this.setState({myKomaHave: myKomaHave});
   }
 
+  //そこにコマがおけるか判定
+  ablePut(value: number, koma:string, moveSelect:number){
+    var direct:number;
+    if(this.state.mySide == "before"){
+      direct = -1;
+    }else{
+      direct = 1;
+    }
+
+    //持ち駒からコマを置く場合
+
+    switch (koma) { // 盤上のコマを動かす場合
+      case hu:
+        console.log(moveSelect)
+        console.log(value)
+        if(value == moveSelect + 9*direct){
+          return true;
+        }
+        break;
+      case kei:
+        if(value == moveSelect + 18*direct + 1 || value == moveSelect + 18*direct - 1){
+          return true;
+        }
+      case gin:
+        if(value == moveSelect + 9*direct || value == moveSelect + 9*direct - 1 || value == moveSelect + 9*direct + 1 || value == moveSelect - 9*direct - 1|| value == moveSelect - 9*direct + 1){
+          return true;
+        }
+      case ou:
+        if(value == moveSelect + 9*direct || value == moveSelect + 9*direct - 1 || value == moveSelect + 9*direct + 1 || value == moveSelect - 9*direct|| value == moveSelect - 1|| value == moveSelect + 1 || value == moveSelect - 9*direct - 1|| value == moveSelect - 9*direct + 1){
+          return true;
+        }
+      case kyo:
+        var shiftCell:number = Math.floor((moveSelect - value)/9);
+        if((moveSelect - value) % 9 == 0 && shiftCell > 0){
+          for (let shiftCell_i = 1; shiftCell_i <= shiftCell; shiftCell_i++) {
+            if(this.state.squares[moveSelect + shiftCell_i * 9 * direct][0] != ""){
+              return false;
+            }
+          }
+          return true;
+        }
+
+      case kaku:
+        if(this.hishakakuMove(moveSelect, value, 10)){
+          return true;
+        }
+        if(this.hishakakuMove(moveSelect, value, 8)){
+          return true;
+        }
+        return false;
+
+      case hisha:
+        if(this.hishakakuMove(moveSelect, value, 9)){
+          return true;
+        }
+        if(this.hishakakuMove(moveSelect, value, 1)){
+          return true;
+        }
+        return false;
+
+      case kin:
+        return this.kinMove(value, moveSelect, direct);
+      case tokin:
+        return this.kinMove(value, moveSelect, direct);
+      case nariGin:
+        return this.kinMove(value, moveSelect, direct);
+      case nariKei:
+        return this.kinMove(value, moveSelect, direct);
+      case nariKyo:
+        return this.kinMove(value, moveSelect, direct);
+
+      case ryu:
+        if(this.hishakakuMove(moveSelect, value, 9)){
+          return true;
+        }
+        if(this.hishakakuMove(moveSelect, value, 1)){
+          return true;
+        }
+        if(value == moveSelect + 10 || value == moveSelect - 10|| value == moveSelect - 8|| value == moveSelect + 8){
+          return true;
+        }
+        return false;
+      case uma:
+        if(this.hishakakuMove(moveSelect, value, 10)){
+          return true;
+        }
+        if(this.hishakakuMove(moveSelect, value, 8)){
+          return true;
+        }
+        if(value == moveSelect + 9 || value == moveSelect - 9|| value == moveSelect - 1|| value == moveSelect + 1){
+          return true;
+        }
+        return false;
+
+      default:
+        break;
+    }
+    return false;
+  }
+
   // コマの成れるか判定
-  gradupJude(value: number, koma:string, moveSelct:number){
+  gradupJude(value: number, koma:string, moveSelect:number){
     let gradeCanKomaList = [
       hisha,
       kaku,
@@ -363,7 +461,7 @@ class Root extends React.Component<{}, IState> {
         if(value <= 26){
           return true;
         }
-        if(moveSelct <= 26){
+        if(moveSelect <= 26){
           return true;
         }
       }
@@ -371,7 +469,7 @@ class Root extends React.Component<{}, IState> {
         if(value >= 54){
           return true;
         }
-        if(moveSelct >= 54){
+        if(moveSelect >= 54){
           return true;
         }
       }
@@ -379,6 +477,47 @@ class Root extends React.Component<{}, IState> {
     return false;
   }
 
+  kinMove(value:number, moveSelect:number, direct:number){
+    if(value == moveSelect + 9*direct || value == moveSelect + 9*direct - 1 || value == moveSelect + 9*direct + 1 || value == moveSelect - 9*direct|| value == moveSelect - 1|| value == moveSelect + 1){
+      return true;
+    }
+  }
+  //飛車 or 角の動き
+  hishakakuMove(moveSelect:number, value:number, shiftNum:number){
+    var direct;
+    var shiftCount;
+    if((moveSelect - value) > 0){
+      direct = -1
+    }else{
+      direct = 1
+    }
+    if((moveSelect - value) % shiftNum == 0){
+      if(shiftNum == 1 && Math.floor(moveSelect / 9) != Math.floor(value / 9)) {
+          return false;
+      }
+      shiftCount = Math.abs(Math.floor((moveSelect - value)/shiftNum));
+      for (let shiftCell_i = 1; shiftCell_i <= shiftCount; shiftCell_i++) {
+        console.log(this.state.squares[moveSelect + shiftCell_i * shiftNum * direct][0])
+        // console.log(this.state.squares[moveSelect + shiftCell_i * 10])
+        // console.log(shiftCell_i)
+        // console.log(moveSelect + shiftCell_i * 10)
+        // console.log(moveSelect + shiftCell_i * -10)
+        if(this.state.squares[moveSelect + shiftCell_i * shiftNum * direct][0] != ""){
+          console.log(moveSelect + shiftCell_i * shiftNum * direct);
+          console.log(this.enemySide());
+          console.log(moveSelect + shiftCell_i * shiftNum * direct);
+          console.log(this.state.squares[moveSelect + shiftCell_i * shiftNum * direct]);
+          if(moveSelect + shiftCell_i * shiftNum * direct == value && this.state.squares[moveSelect + shiftCell_i * shiftNum * direct][1] == this.enemySide()){
+            return true;
+          }
+          return false;
+        }
+      }
+      return true;
+    }
+  }
+
+  //コマがどのコマに成るか判定
   gradeUp(koma:string){
     switch (koma) {
       case hisha:
@@ -399,81 +538,33 @@ class Root extends React.Component<{}, IState> {
     }
   }
 
-
-  // myHavefieldDisplay(output:string){
-  //   const myKomaHave = this.state.myKomaHave;
-  //   if(myKomaHave.hisha != 0 && output == "飛"){
-  //     if(this.state.moveSelct == 101){
-  //       return <div style={{display: "flex"}}><p className="moveSelct" onClick={this.moveSelct.bind(this,101)}>飛</p><p>×{myKomaHave.hisha}</p></div>;
-  //     }
-  //     return <div style={{display: "flex"}}><p onClick={this.moveSelct.bind(this,101)}>飛</p><p>×{myKomaHave.hisha}</p></div>;
-  //   }
-  //
-  //   if(myKomaHave.kaku != 0 && output == "角"){
-  //     if(this.state.moveSelct == 102){
-  //       return <div style={{display: "flex"}}><p className="moveSelct" onClick={this.moveSelct.bind(this,102)}>角</p><p>×{myKomaHave.hisha}</p></div>;
-  //     }
-  //     return <div style={{display: "flex"}}><p onClick={this.moveSelct.bind(this,102)}>角</p><p>×{myKomaHave.kaku}</p></div>;
-  //   }
-  //
-  //   if(myKomaHave.kin != 0 && output == "金"){
-  //     if(this.state.moveSelct == 103){
-  //       return <div style={{display: "flex"}}><p className="moveSelct" onClick={this.moveSelct.bind(this,103)}>金</p><p>×{myKomaHave.hisha}</p></div>;
-  //     }
-  //     return <div style={{display: "flex"}}><p onClick={this.moveSelct.bind(this,103)}>金</p><p>×{myKomaHave.kin}</p></div>;
-  //   }
-  //
-  //   if(myKomaHave.gin != 0 && output == "銀"){
-  //     if(this.state.moveSelct == 104){
-  //       return <div style={{display: "flex"}}><p className="moveSelct" onClick={this.moveSelct.bind(this,104)}>銀</p><p>×{myKomaHave.hisha}</p></div>;
-  //     }
-  //     return <div style={{display: "flex"}}><p onClick={this.moveSelct.bind(this,104)}>銀</p><p>×{myKomaHave.gin}</p></div>;
-  //   }
-  //
-  //   if(myKomaHave.kei != 0 && output == "桂"){
-  //     if(this.state.moveSelct == 105){
-  //       return <div style={{display: "flex"}}><p className="moveSelct" onClick={this.moveSelct.bind(this,105)}>桂</p><p>×{myKomaHave.hisha}</p></div>;
-  //     }
-  //     return <div style={{display: "flex"}}><p onClick={this.moveSelct.bind(this,105)}>桂</p><p>×{myKomaHave.kei}</p></div>;
-  //   }
-  //
-  //   if(myKomaHave.kyo != 0 && output == "香"){
-  //     if(this.state.moveSelct == 106){
-  //       return <div style={{display: "flex"}}><p className="moveSelct" onClick={this.moveSelct.bind(this,106)}>香</p><p>×{myKomaHave.hisha}</p></div>;
-  //     }
-  //     return <div style={{display: "flex"}}><p onClick={this.moveSelct.bind(this,106)}>香</p><p>×{myKomaHave.kyo}</p></div>;
-  //   }
-  //
-  //   if(myKomaHave.hu != 0 && output == "歩"){
-  //     if(this.state.moveSelct == 107){
-  //       return <div style={{display: "flex"}}><p className="moveSelct" onClick={this.moveSelct.bind(this,107)}>歩</p><p>×{myKomaHave.hisha}</p></div>;
-  //     }
-  //     return <div style={{display: "flex"}}><p onClick={this.moveSelct.bind(this,107)}>歩</p><p>×{myKomaHave.hu}</p></div>;
-  //   }
-  //   return <div></div>;
-  // }
-
   render() {
     const fieldList = this.state.squares.map((output: string[], key) => {
-      if(this.state.moveSelct == key){
+      if(this.state.moveSelect == key){
         return(
-          <div className="moveSelct" key = {key.toString()} id = {key.toString()} style={{position: "relative"}} onClick={this.moveSelct.bind(this,key)}>
+          <div className="moveSelect" key = {key.toString()} id = {key.toString()} style={{position: "relative"}} onClick={this.moveSelect.bind(this,key)}>
             <Box koma={output}/>
           </div>
         )
       }
       return(
-        <div className="box" key = {key.toString()} id = {key.toString()} style={{position: "relative"}} onClick={this.moveSelct.bind(this,key)}>
+        <div className="box" key = {key.toString()} id = {key.toString()} style={{position: "relative"}} onClick={this.moveSelect.bind(this,key)}>
           <Box koma={output}/>
         </div>
       )
     });
 
     const myHavefield = komaList.map((output: string, key) => {
-      return <h3>{output}×{this.state.myKomaHave[key]}</h3>;
+      if(this.state.myKomaHave[key] != 0){
+        return <h3>{output}×{this.state.myKomaHave[key]}</h3>;
+      }
     });
 
-    const enemyHavefield = <h1>oka</h1>;
+    const enemyHavefield = komaList.map((output: string, key) => {
+      if(this.state.enemyKomaHave[key] != 0){
+        return <h3>{output}×{this.state.enemyKomaHave[key]}</h3>;
+      }
+    });
 
 
     return (
@@ -509,7 +600,6 @@ class Root extends React.Component<{}, IState> {
             <div style={{display: "flex"}}>
               <div style={{transform: "rotate(180deg)"}}>
                 {enemyHavefield}
-                oka
               </div>
 
               <div className="field">
