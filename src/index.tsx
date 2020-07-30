@@ -10,13 +10,13 @@ import firebase from "firebase";
 const B = require('./img/B.jpg').default;
 
 const ou = "王";
-const kin = "金";
-const gin = "銀";
-const hisha = "飛";
-const kaku = "角";
-const kei = "桂";
-const kyo = "香";
-const hu = "歩";
+const hisha = "飛"; // 1
+const kaku = "角"; // 2
+const kin = "金"; // 3
+const gin = "銀"; // 4
+const kei = "桂"; // 5
+const kyo = "香"; // 6
+const hu = "歩"; // 7
 const ryu = "龍";
 const uma = "馬";
 const nariGin = "成銀";
@@ -72,8 +72,8 @@ interface IState {
   squares: any[];
   mySide: string;
   moveSelct: number;
-  myKomaHave: any;
-  enemyKomaHave: any;
+  myKomaHave: any[];
+  enemyKomaHave: any[];
 }
 
 const komaList = [
@@ -107,24 +107,24 @@ class Root extends React.Component<{}, IState> {
       //   [kyo, 0],
       //   [hu, 0],
       // ],
-      myKomaHave: {
-        'hisha': 0,
-        'kaku': 0,
-        'kin': 0,
-        'gin': 0,
-        'kei': 0,
-        'kyo': 0,
-        'hu': 0,
-      },
-      enemyKomaHave: {
-        'hisha': 0,
-        'kaku': 0,
-        'kin': 0,
-        'gin': 0,
-        'kei': 0,
-        'kyo': 0,
-        'hu': 0,
-      },
+      myKomaHave: [
+        0, //hisha
+        0, //kaku
+        0, //kin
+        0, //gin
+        0, //kei
+        0, //kyo
+        0, //hu
+      ],
+      enemyKomaHave: [
+        0, //hisha
+        0, //kaku
+        0, //kin
+        0, //gin
+        0, //kei
+        0, //kyo
+        0, //hu
+      ],
     };
 
     //歩
@@ -300,22 +300,31 @@ class Root extends React.Component<{}, IState> {
   }
 
   moveSelct(value:number){
+    if(value == 101){
+      this.setState({moveSelct: value});
+      return;
+    }
     if(this.state.moveSelct != -1){ //選択中のとき
       if(this.state.squares[value][1] == this.state.mySide){ //選択肢を変えるだけ
         this.setState({moveSelct: value});
       }
 
       else{ //移動する
-        const komaSelect = this.state.squares[this.state.moveSelct];
+        var komaSelect = this.state.squares[this.state.moveSelct][0];
 
         if(true){ //そこに駒が置けるか判定する
+          if(this.gradupJude(value, this.state.squares[this.state.moveSelct][0], this.state.moveSelct)){
+              if(window.confirm("成りますか？")) { // 成るかどうかのconfirm
+                  komaSelect = this.gradeUp(this.state.squares[this.state.moveSelct][0]);
+              }
+          }
           if(this.state.squares[value][1] == this.enemySide()){ //相手の駒をとる
             this.MyKomaHaveChange(this.state.myKomaHave, this.state.squares[value][0], 1);
           }
           //ただの移動
           const tmpSquares = this.state.squares;
           tmpSquares[this.state.moveSelct] = ["", ""];
-          tmpSquares[value] = [komaSelect[0], this.state.mySide];
+          tmpSquares[value] = [komaSelect, this.state.mySide];
           this.setState({squares: tmpSquares});
           console.log(this.state.myKomaHave);
         }
@@ -329,58 +338,120 @@ class Root extends React.Component<{}, IState> {
     }
   }
 
+  // 持ち駒の数を変更
   MyKomaHaveChange(myKomaHave:any, koma: string, num: number){
-      switch (koma){
-        case '飛':
-          myKomaHave.hisha += num;
-          break;
-        case '角':
-          myKomaHave.kaku += num;
-          break;
-        case '金':
-          myKomaHave.kin += num;
-          break;
-        case '銀':
-          myKomaHave.gin += num;
-          break;
-        case '桂':
-          myKomaHave.kei += num;
-          break;
-        case '香':
-          myKomaHave.kyo += num;
-          break;
-        case '歩':
-          myKomaHave.hu += num;
-          break;
-      }
-      this.setState({myKomaHave: myKomaHave});
+    for (let komaList_i = 0; komaList_i < komaList.length; komaList_i++) {
+        if(komaList[komaList_i] == koma){
+          myKomaHave[komaList_i] += num;
+        }
+    }
+    this.setState({myKomaHave: myKomaHave});
   }
 
-  myHavefieldDisplay(output:string){
-    const myKomaHave = this.state.myKomaHave;
-    if(myKomaHave.hisha != 0 && output == "飛"){
-      return <div>飛{myKomaHave.hisha}</div>;
+  // コマの成れるか判定
+  gradupJude(value: number, koma:string, moveSelct:number){
+    let gradeCanKomaList = [
+      hisha,
+      kaku,
+      gin,
+      kei,
+      kyo,
+      hu,
+    ]
+    if(gradeCanKomaList.includes(koma)){
+      if(this.state.mySide == "before"){
+        if(value <= 26){
+          return true;
+        }
+        if(moveSelct <= 26){
+          return true;
+        }
+      }
+      if(this.state.mySide == "after"){
+        if(value >= 54){
+          return true;
+        }
+        if(moveSelct >= 54){
+          return true;
+        }
+      }
     }
-    if(myKomaHave.kaku != 0 && output == "角"){
-      return <div>角{myKomaHave.kaku}</div>;
-    }
-    if(myKomaHave.kin != 0 && output == "金"){
-      return <div>金{myKomaHave.kin}</div>;
-    }
-    if(myKomaHave.gin != 0 && output == "銀"){
-      return <div>銀{myKomaHave.gin}</div>;
-    }
-    if(myKomaHave.kei != 0 && output == "桂"){
-      return <div>桂{myKomaHave.kei}</div>;
-    }
-    if(myKomaHave.kyo != 0 && output == "香"){
-      return <div>香{myKomaHave.kyo}</div>;
-    }
-    if(myKomaHave.hu != 0 && output == "歩"){
-      return <div>歩{myKomaHave.hu}</div>;
-    }
-    return <div></div>;
+    return false;
   }
+
+  gradeUp(koma:string){
+    switch (koma) {
+      case hisha:
+        return ryu;
+      case kaku:
+        return uma;
+      case gin:
+        return nariGin;
+      case kei:
+        return nariKei;
+      case kyo:
+        return nariKyo;
+      case hu:
+        return tokin;
+
+      default:
+        break;
+    }
+  }
+
+
+  // myHavefieldDisplay(output:string){
+  //   const myKomaHave = this.state.myKomaHave;
+  //   if(myKomaHave.hisha != 0 && output == "飛"){
+  //     if(this.state.moveSelct == 101){
+  //       return <div style={{display: "flex"}}><p className="moveSelct" onClick={this.moveSelct.bind(this,101)}>飛</p><p>×{myKomaHave.hisha}</p></div>;
+  //     }
+  //     return <div style={{display: "flex"}}><p onClick={this.moveSelct.bind(this,101)}>飛</p><p>×{myKomaHave.hisha}</p></div>;
+  //   }
+  //
+  //   if(myKomaHave.kaku != 0 && output == "角"){
+  //     if(this.state.moveSelct == 102){
+  //       return <div style={{display: "flex"}}><p className="moveSelct" onClick={this.moveSelct.bind(this,102)}>角</p><p>×{myKomaHave.hisha}</p></div>;
+  //     }
+  //     return <div style={{display: "flex"}}><p onClick={this.moveSelct.bind(this,102)}>角</p><p>×{myKomaHave.kaku}</p></div>;
+  //   }
+  //
+  //   if(myKomaHave.kin != 0 && output == "金"){
+  //     if(this.state.moveSelct == 103){
+  //       return <div style={{display: "flex"}}><p className="moveSelct" onClick={this.moveSelct.bind(this,103)}>金</p><p>×{myKomaHave.hisha}</p></div>;
+  //     }
+  //     return <div style={{display: "flex"}}><p onClick={this.moveSelct.bind(this,103)}>金</p><p>×{myKomaHave.kin}</p></div>;
+  //   }
+  //
+  //   if(myKomaHave.gin != 0 && output == "銀"){
+  //     if(this.state.moveSelct == 104){
+  //       return <div style={{display: "flex"}}><p className="moveSelct" onClick={this.moveSelct.bind(this,104)}>銀</p><p>×{myKomaHave.hisha}</p></div>;
+  //     }
+  //     return <div style={{display: "flex"}}><p onClick={this.moveSelct.bind(this,104)}>銀</p><p>×{myKomaHave.gin}</p></div>;
+  //   }
+  //
+  //   if(myKomaHave.kei != 0 && output == "桂"){
+  //     if(this.state.moveSelct == 105){
+  //       return <div style={{display: "flex"}}><p className="moveSelct" onClick={this.moveSelct.bind(this,105)}>桂</p><p>×{myKomaHave.hisha}</p></div>;
+  //     }
+  //     return <div style={{display: "flex"}}><p onClick={this.moveSelct.bind(this,105)}>桂</p><p>×{myKomaHave.kei}</p></div>;
+  //   }
+  //
+  //   if(myKomaHave.kyo != 0 && output == "香"){
+  //     if(this.state.moveSelct == 106){
+  //       return <div style={{display: "flex"}}><p className="moveSelct" onClick={this.moveSelct.bind(this,106)}>香</p><p>×{myKomaHave.hisha}</p></div>;
+  //     }
+  //     return <div style={{display: "flex"}}><p onClick={this.moveSelct.bind(this,106)}>香</p><p>×{myKomaHave.kyo}</p></div>;
+  //   }
+  //
+  //   if(myKomaHave.hu != 0 && output == "歩"){
+  //     if(this.state.moveSelct == 107){
+  //       return <div style={{display: "flex"}}><p className="moveSelct" onClick={this.moveSelct.bind(this,107)}>歩</p><p>×{myKomaHave.hisha}</p></div>;
+  //     }
+  //     return <div style={{display: "flex"}}><p onClick={this.moveSelct.bind(this,107)}>歩</p><p>×{myKomaHave.hu}</p></div>;
+  //   }
+  //   return <div></div>;
+  // }
 
   render() {
     const fieldList = this.state.squares.map((output: string[], key) => {
@@ -399,7 +470,7 @@ class Root extends React.Component<{}, IState> {
     });
 
     const myHavefield = komaList.map((output: string, key) => {
-      return <h3>{this.myHavefieldDisplay(output)}</h3>;
+      return <h3>{output}×{this.state.myKomaHave[key]}</h3>;
     });
 
     const enemyHavefield = <h1>oka</h1>;
